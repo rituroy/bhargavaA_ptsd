@@ -30,6 +30,7 @@ compList=paste("_",unique(datObj$ann$type),sep="")
 compList=paste("_25percMostVarMetab_",unique(datObj$ann$type),sep="")
 
 datFlag=""
+limSl=c(330,480)
 
 colGeneId="id"; colIdPV="pv"; colNamePV="PV"
 
@@ -133,7 +134,7 @@ for (compFlag in compList) {
                 }
                 annRow=datObj$ann
                 phen=datObj$phen[samId,]
-                phen$id2=sapply(phen$id,function(x) {strsplit(x,"_")[[1]][2]},USE.NAMES=F)
+                #phen$id2=sapply(phen$id,function(x) {strsplit(x,"_")[[1]][2]},USE.NAMES=F)
                 
                 if (length(grep("_primary|_steroid",compFlag))) {
                     annRow=annRow[,c("id","type")]
@@ -234,8 +235,10 @@ for (compFlag in compList) {
                 }
                 varFList=varFName=NULL
                 
-                varList=c("ptsd","sex")
-                varName=paste(c("PTSD","Gender")," ",sep="")
+                #varList=c("ptsd","sex")
+                #varName=paste(c("PTSD","Gender")," ",sep="")
+                varList=c("ptsd","sex","diary_tst","psg_tst","ln_delta_nrem")
+                varName=paste(c("ptsd","gender","diary_tst","psg_tst","ln_delta_nrem")," ",sep="")
                 k=which(varList%in%names(annCol))
                 varListAll=varList
                 varNameAll=varName
@@ -250,49 +253,59 @@ for (compFlag in compList) {
                 distMethod="pearson"
                 linkMethod="ward.D2"
                 
-                #cloneName=annRow$geneSymbol
-                cloneName=rep("",nrow(annRow))
+                #rowName=annRow$geneSymbol
+                rowName=rep("",nrow(annRow))
                 if (is.null(varFList)) {
-                    cloneCol=NULL
+                    rowCol=NULL
                 } else {
-                    cloneCol=matrix(nrow=length(varFList),ncol=nrow(annRow))
+                    rowCol=matrix(nrow=length(varFList),ncol=nrow(annRow))
                     for (varId in 1:length(varFList)) {
                         x=annRowAll[,varFList[varId]]
                         x[x==""]=NA; x=as.integer(as.factor(x))
                         grpUniq=sort(unique(x))
                         x=x[match(annRow$affyId,annRowAll$affyId)]
                         if (length(grpUniq)<=length(colList2)) {
-                            cloneCol[varId,]=colList2[x]
+                            rowCol[varId,]=colList2[x]
                         } else if (length(grpUniq)<=length(colList)) {
-                            cloneCol[varId,]=colList[x]
+                            rowCol[varId,]=colList[x]
                         } else {
-                            cloneCol[varId,]=rainbow(length(grpUniq))[x]
+                            rowCol[varId,]=rainbow(length(grpUniq))[x]
                         }
                     }
-                    rownames(cloneCol)=varFName
+                    rownames(rowCol)=varFName
                 }
                 
                 if (F) {
                     if (subsetFlag=="") {
-                        samName=rep("",ncol(arrayData))
+                        colName=rep("",ncol(arrayData))
                     } else {
-                        samName=annCol$id2
+                        colName=annCol$id2
                     }
                 }
-                #samName=annCol$id2
-                samName=rep("",nrow(annCol))
-                samCol=NULL
-                samCol=matrix(nrow=length(varList),ncol=nrow(annCol))
+                #colName=annCol$id2
+                colName=rep("",nrow(annCol))
+                colCol=NULL
+                colCol=matrix(nrow=length(varList),ncol=nrow(annCol))
                 for (varId in 1:length(varList)) {
-                    if (varList[varId]%in%c("lib.size")) {
+                    if (varList[varId]%in%c("diary_tst","psg_tst","ln_delta_nrem")) {
                         j=match(annCol$id,annColAll$id)
-                        x=round(annColAll[,varList[varId]])
-                        lim=range(x,na.rm=T)
-                        #lim=quantile(x,probs=c(.1,.9),na.rm=T)
+                        if (varList[varId]%in%c("diary_tst","psg_tst")) {
+                            x=round(annColAll[,varList[varId]])
+                            lim=limSl
+                        } else if (varList[varId]%in%c("ln_delta_nrem")) {
+                            x=round(100*annColAll[,varList[varId]])
+                            lim=range(x,na.rm=T)
+                        } else {
+                            x=round(annColAll[,varList[varId]])
+                            #lim=range(x,na.rm=T)
+                            lim=quantile(x,probs=c(.1,.9),na.rm=T)
+                        }
                         x[x<lim[1]]=lim[1]; x[x>lim[2]]=lim[2]
+                        x=x-min(x,na.rm=T)+1
                         grpUniq=lim[1]:lim[2]
-                        samColUniq=gray(0:(length(grpUniq)-1)/length(grpUniq))
-                        samCol[varId,]=samColUniq[x[j]]
+                        colColUniq=maPalette(high=colList2[2],low=colList2[1],k=length(grpUniq))
+                        #colColUniq=gray(0:(length(grpUniq)-1)/length(grpUniq))
+                        colCol[varId,]=colColUniq[x[j]]
                     } else {
                         if (varList[varId]%in%c("time")) {
                             x=annColAll[,varList[varId]]
@@ -303,15 +316,15 @@ for (compFlag in compList) {
                         grpUniq=sort(unique(x))
                         x=x[match(annCol$id,annColAll$id)]
                         if (length(grpUniq)<=length(colList2)) {
-                            samCol[varId,]=colList2[x]
+                            colCol[varId,]=colList2[x]
                         } else if (length(grpUniq)<=length(colList)) {
-                            samCol[varId,]=colList[x]
+                            colCol[varId,]=colList[x]
                         } else {
-                            samCol[varId,]=rainbow(length(grpUniq))[x]
+                            colCol[varId,]=rainbow(length(grpUniq))[x]
                         }
                     }
                 }
-                rownames(samCol)=varName
+                rownames(colCol)=varName
                 
                 print("summary(range(c(arrayData),na.rm=T))")
                 print(summary(range(c(arrayData),na.rm=T)))
@@ -373,8 +386,8 @@ for (compFlag in compList) {
                     pdf(paste(subDir,"heatmap",fNameOut,".pdf",sep=""))
                 }
                 totalC=ncol(arrayData)
-                #hcc=heatmap3(x=arrayData, Rowv=as.dendrogram(clustR), Colv=as.dendrogram(clustC), distfun=distMethod, hclustfun=hclust, symm=F, ColSideColors=samCol, RowSideColors=cloneCol, labCol=samName, labRow=cloneName, ncr=nClust[1], ncc=nClust[2], scale="none", na.rm=F, margins=margins, main=main, xlab=NULL, ylab=NULL, zlm=limit,cexCol=2, , high=colHM[1], low=colHM[2], mid=colHM[3])
-                hcc=heatmap3(x=arrayData, Rowv=clustR, Colv=clustC, distfun=distMethod, hclustfun=hclust, symm=F, ColSideColors=samCol, RowSideColors=cloneCol, labCol=samName, labRow=cloneName, ncr=nClust[1], ncc=nClust[2], scale="none", na.rm=F, margins=margins, main=main, xlab=NULL, ylab=NULL, zlm=limit,cexCol=2, , high=colHM[1], low=colHM[2], mid=colHM[3],totalC=totalC)
+                #hcc=heatmap3(x=arrayData, Rowv=as.dendrogram(clustR), Colv=as.dendrogram(clustC), distfun=distMethod, hclustfun=hclust, symm=F, ColSideColors=colCol, RowSideColors=rowCol, labCol=colName, labRow=rowName, ncr=nClust[1], ncc=nClust[2], scale="none", na.rm=F, margins=margins, main=main, xlab=NULL, ylab=NULL, zlm=limit,cexCol=2, , high=colHM[1], low=colHM[2], mid=colHM[3])
+                hcc=heatmap3(x=arrayData, Rowv=clustR, Colv=clustC, distfun=distMethod, hclustfun=hclust, symm=F, ColSideColors=colCol, RowSideColors=rowCol, labCol=colName, labRow=rowName, ncr=nClust[1], ncc=nClust[2], scale="none", na.rm=F, margins=margins, main=main, xlab=NULL, ylab=NULL, zlm=limit,cexCol=2, , high=colHM[1], low=colHM[2], mid=colHM[3],totalC=totalC)
                 dev.off()
                 
                 if (is.na(nClust[1])) {
@@ -424,7 +437,7 @@ subDir="legend/"
 if (subDir!="" & !file.exists(subDir)){
     dir.create(file.path(subDir))
 }
-if (!is.null(cloneCol)) {
+if (!is.null(rowCol)) {
     for (varId in 1:length(varFListAll)) {
         if (length(grep("signif_",varFListAll[varId]))==1) {
             nm=""
@@ -452,21 +465,38 @@ if (!is.null(cloneCol)) {
         dev.off()
     }
 }
-if (!is.null(samCol)) {
+if (!is.null(colCol)) {
     for (varId in 1:length(varListAll)) {
-        if (outFormat=="png") {
-            png(paste(subDir,"heatmapSampleColorBarLegend_",varListAll[varId],".png",sep=""))
+        if (varListAll[varId]%in%c("diary_tst","psg_tst","ln_delta_nrem")) {
+            if (outFormat=="png") {
+                png(paste(subDir,"heatmapSampleColorBarLegend_",varListAll[varId],".png",sep=""),width=480,height=0.3*480)
+            } else if (outFormat=="pdf") {
+                pdf(paste(subDir,"heatmapSampleColorBarLegend_",varListAll[varId],".pdf",sep=""))
+            }
+            if (varList[varId]%in%c("diary_tst","psg_tst")) {
+                x=round(annColAll[,varListAll[varId]])
+                lim=limSl
+            } else if (varList[varId]%in%c("ln_delta_nrem")) {
+                x=round(100*annColAll[,varListAll[varId]])
+                lim=range(x,na.rm=T)
+                lim=lim/100
+            } else {
+                x=round(annColAll[,varListAll[varId]])
+                #lim=range(x,na.rm=T)
+                lim=quantile(x,probs=c(.1,.9),na.rm=T)
+            }
+            heatmapColorBar(limit=lim,cols=rev(colList2),main=varNameAll[varId])
+            if (F) {
+                grpUniq=lim[1]:lim[2]
+                colColUniq=gray(0:(length(grpUniq)-1)/length(grpUniq))
+                heatmapColorBar(limit=lim,cols=c(colColUniq[c(length(colColUniq),1)],median(1:length(colColUniq))),main=varNameAll[varId])
+            }
         } else {
-            pdf(paste(subDir,"heatmapSampleColorBarLegend_",varListAll[varId],".pdf",sep=""))
-        }
-        if (varListAll[varId]%in%c("age","wbc")) {
-            x=round(annColAll[,varListAll[varId]])
-            lim=range(x,na.rm=T)
-            #lim=quantile(x,probs=c(.1,.9),na.rm=T)
-            grpUniq=lim[1]:lim[2]
-            samColUniq=gray(0:(length(grpUniq)-1)/length(grpUniq))
-            heatmapColorBar(limit=lim,cols=c(samColUniq[c(length(samColUniq),1)],median(samColUniq)))
-        } else {
+            if (outFormat=="png") {
+                png(paste(subDir,"heatmapSampleColorBarLegend_",varListAll[varId],".png",sep=""))
+            } else {
+                pdf(paste(subDir,"heatmapSampleColorBarLegend_",varListAll[varId],".pdf",sep=""))
+            }
             if (varList[varId]%in%c("time")) {
                 x=annColAll[,varListAll[varId]]
             } else {
