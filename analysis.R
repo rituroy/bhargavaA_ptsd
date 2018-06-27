@@ -10,6 +10,29 @@ source(paste(dirSrc,"functions/miscFuncs.1.3.R",sep=""))
 ##############################################
 ## Section 1
 
+
+## --------------------
+datadir="docs/"
+
+tbl3=read.table(paste(datadir,"mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,skip=7)
+tbl32=read.table(paste(datadir,"mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,nrow=10)
+x=unlist(tbl32[3,],use.names=F)
+k=grep("label",x)+1
+names(tbl3)[k:ncol(tbl3)]=x[k:ncol(tbl3)]
+tbl31=tbl3
+
+tbl3=read.table(paste(datadir,"May4-ABedits- mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,skip=7)
+tbl32=read.table(paste(datadir,"May4-ABedits- mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,nrow=10)
+x=unlist(tbl32[3,],use.names=F)
+k=grep("label",x)+1
+names(tbl3)[k:ncol(tbl3)]=x[k:ncol(tbl3)]
+tbl32=tbl3
+
+k=match(names(tbl31),names(tbl32)); k1=which(!is.na(k)); k2=k[k1]
+for (k in 1:length(k1)) {
+    if (any(tbl31[,k1[k]]!=tbl32[,k2[k]],na.rm=T) | any(is.na(tbl31[,k1[k]])!=is.na(tbl32[,k2[k]]))) print(k)
+}
+
 ## --------------------
 
 datadir="docs/"
@@ -18,9 +41,12 @@ ann0=read.table(paste(datadir,"NIH West Coast Metabolomics Center_UC Davis_ 1083
 tbl1=read.table(paste(datadir,"mx 315077 Aditi Bhargava_human serum_04-2017_submit TRANSPOSED.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T)
 tbl2=read.table(paste(datadir,"mx 315178 Bhargava_human plasma_lipidomics_CSH-QTOF MS_05-2017_submit TRANSPOSE.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T)
 tbl22=read.table(paste(datadir,"mx 315178 Bhargava_human plasma_lipidomics_CSH-QTOF MS_05-2017_submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,skip=6)
-#tbl3=read.table(paste(datadir,"mx 315279 Bhargava bile acids_steroids_12-2017_submit TRANSPOSED.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T)
-tbl3=read.table(paste(datadir,"mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,skip=7)
-tbl32=read.table(paste(datadir,"mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,nrow=10)
+##tbl3=read.table(paste(datadir,"mx 315279 Bhargava bile acids_steroids_12-2017_submit TRANSPOSED.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T)
+#tbl3=read.table(paste(datadir,"mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,skip=7)
+#tbl32=read.table(paste(datadir,"mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,nrow=10)
+tbl3=read.table(paste(datadir,"May4-ABedits- mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,skip=7)
+tbl32=read.table(paste(datadir,"May4-ABedits- mx 315279 Bhargava_bile acids steroids_human serum_03-2018_submit (1) - Data Submit.txt",sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T,nrow=10)
+tbl3$type[which(tbl3$type=="internal statndard")]="internal standard"
 x=unlist(tbl32[3,],use.names=F)
 k=grep("label",x)+1
 names(tbl3)[k:ncol(tbl3)]=x[k:ncol(tbl3)]
@@ -99,7 +125,7 @@ tbl=tbl[,j1]
 tmp=as.data.frame(matrix("",nrow=nrow(ann3),ncol=ncol(ann)),stringsAsFactors=F); colnames(tmp)=names(ann)
 k=match(names(ann3),names(tmp)); k1=which(!is.na(k)); k2=k[k1]
 tmp[,k2]=ann3[,k1]
-tmp$type="steroid"
+#tmp$type="steroid"
 ann=rbind(ann,tmp)
 rm(ann3,tmp)
 metab=rbind(metab,as.matrix(tbl))
@@ -121,6 +147,7 @@ for (gId in 1:length(grpUniq)) {
     i=which(grp==grpUniq[gId])
     xlim=range(metab[i,],na.rm=T)
     xlim=quantile(metab[i,],na.rm=T,probs=c(0,.975))
+    if (any(is.na(xlim))) next
     png(paste("densityPlot_",grpUniq[gId],".png",sep=""))
     plot(density(metab[i[1],],na.rm=T),main=grpUniq[gId],xlim=xlim,ylim=ylim)
     for (ii in i) {
@@ -196,6 +223,11 @@ for (normFlag in normList) {
     }
     x=c(metab)
     metabR=log2(metab+min(x[which(x!=0)])/10)
+    metabR1=metabR
+    metabR=metab
+    metabR[metab==0]=min(x[which(x!=0)])/10
+    metabR=log2(metabR)
+    metabR2=metabR
     
     if (F) {
         metabI=metab
@@ -251,7 +283,7 @@ datObj=list(metab=metab,metabRaw=metabR,metabImp=metabI,ann=ann,phen=phen)
 
 
 ##############################################
-colInfo=data.frame(name1=c("(Intercept)","metabolite","ptsdPTSD","sexMale","metabolite:sexMale","ptsdPTSD:sexMale","diary_tst","psg_tst","ln_delta_nrem","diary_tst:sexMale","psg_tst:sexMale","ln_delta_nrem:sexMale"),name2=c("intercept","metabolite","ptsd","maleVfemale","metaboliteGenderInteraction","ptsdGenderInteraction","diary_tst","psg_tst","ln_delta_nrem","diary_tstGenderInteraction","psg_tstGenderInteraction","ln_delta_nremGenderInteraction"),stringsAsFactors=F)
+colInfo=data.frame(name1=c("(Intercept)","metabolite","ptsdPTSD","sexMale","metabolite:sexMale","ptsdPTSD:sexMale","diary_tst","psg_tst","ln_delta_nrem","ptsdPTSD:diary_tst","ptsdPTSD:psg_tst","ptsdPTSD:ln_delta_nrem","diary_tst:sexMale","psg_tst:sexMale","ln_delta_nrem:sexMale","metabolite:diary_tst","metabolite:psg_tst","metabolite:ln_delta_nrem"),name2=c("intercept","metabolite","ptsd","maleVfemale","metaboliteSexInteraction","ptsdSexInteraction","diary_tst","psg_tst","ln_delta_nrem","ptsdDiary_tstInteraction","ptsdPsg_tstInteraction","ptsdLn_delta_nremInteraction","diary_tstSexInteraction","psg_tstSexInteraction","ln_delta_nremSexInteraction","metaboliteDiary_tstInteraction","metabolitePsg_tstInteraction","metaboliteLn_delta_nremInteraction"),stringsAsFactors=F)
 
 ##############################################
 ## Section 2
@@ -276,9 +308,16 @@ metabI=datObj$metabImp
 modelList=c("ptsd","sex","ptsd+sex","ptsd*sex","diary_tst","psg_tst","ln_delta_nrem")
 modelList=c("diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex")
 modelList=c("ptsd","sex","ptsd+sex","ptsd*sex","diary_tst","psg_tst","ln_delta_nrem","diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex","diary_tst*sex","psg_tst*sex","ln_delta_nrem*sex")
+modelList=c("ptsd+sex","ptsd*sex","diary_tst","psg_tst","ln_delta_nrem","ptsd+diary_tst","ptsd+psg_tst","ptsd+ln_delta_nrem","ptsd*diary_tst","ptsd*psg_tst","ptsd*ln_delta_nrem","diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex","diary_tst*sex","psg_tst*sex","ln_delta_nrem*sex")
+modelList=c("ptsd","sex","ptsd+sex","ptsd*sex","diary_tst","psg_tst","ln_delta_nrem","ptsd+diary_tst","ptsd+psg_tst","ptsd+ln_delta_nrem","ptsd*diary_tst","ptsd*psg_tst","ptsd*ln_delta_nrem","diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex","diary_tst*sex","psg_tst*sex","ln_delta_nrem*sex")
+
+metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
+
+modelList=c("sex","diary_tst","diary_tst+sex","diary_tst*sex")
+metabList="lipid"
 
 ## --------------------
-for (metabFlag in unique(ann$type)) {
+for (metabFlag in metabList) {
     for (respFlag in c("metab")) {
         for (modelFlag in modelList) {
             cat("\n\n============= ",metabFlag,", ",modelFlag,"\n")
@@ -292,13 +331,22 @@ for (metabFlag in unique(ann$type)) {
             if (modelFlag%in%c("ptsd+sex","ptsd*sex")) {
                 i=which(fitMP$p.value[,2]<pThres2 & fitMS$p.value[,2]<pThres2)
                 expr=expr[i,]
-            } else if (modelFlag%in%c("diary_tst+sex")) {
+            } else if (modelFlag%in%c("ptsd+diary_tst","ptsd*diary_tst")) {
+                i=which(fitMDT$p.value[,2]<pThres2 & fitMP$p.value[,2]<pThres2)
+                expr=expr[i,]
+            } else if (modelFlag%in%c("ptsd+psg_tst","ptsd*psg_tst")) {
+                i=which(fitMPT$p.value[,2]<pThres2 & fitMP$p.value[,2]<pThres2)
+                expr=expr[i,]
+            } else if (modelFlag%in%c("ptsd+ln_delta_nrem","ptsd*ln_delta_nrem")) {
+                i=which(fitMDR$p.value[,2]<pThres2 & fitMP$p.value[,2]<pThres2)
+                expr=expr[i,]
+            } else if (modelFlag%in%c("diary_tst+sex","diary_tst*sex")) {
                 i=which(fitMDT$p.value[,2]<pThres2 & fitMS$p.value[,2]<pThres2)
                 expr=expr[i,]
-            } else if (modelFlag%in%c("psg_tst+sex")) {
+            } else if (modelFlag%in%c("psg_tst+sex","psg_tst*sex")) {
                 i=which(fitMPT$p.value[,2]<pThres2 & fitMS$p.value[,2]<pThres2)
                 expr=expr[i,]
-            } else if (modelFlag%in%c("ln_delta_nrem+sex")) {
+            } else if (modelFlag%in%c("ln_delta_nrem+sex","ln_delta_nrem*sex")) {
                 i=which(fitMDR$p.value[,2]<pThres2 & fitMS$p.value[,2]<pThres2)
                 expr=expr[i,]
             }
@@ -373,6 +421,105 @@ for (metabFlag in unique(ann$type)) {
 }
 
 ## --------------------
+## Logistic regression
+
+if (F) {
+    metabI=datObj$metabImp
+
+    metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
+
+    for (datFlag in datList) {
+        subDir=datFlag
+        if (subDir!="" & !file.exists(subDir)) dir.create(file.path(subDir))
+        datadir=paste(subDir,"/",sep="")
+        for (metabFlag in metabList) {
+            for (respFlag in c("metab")) {
+                for (modelFlag in c("ptsd","sex")) {
+                    cat("\n\n============= ",datFlag,", ",metabFlag,", ",modelFlag,"\n",sep="")
+                    modelThis=as.formula(paste("~",modelFlag,sep=""))
+                    i=1:10
+                    if (datFlag==c("raw_allMetab")) {
+                        i=which(ann$type==metabFlag)
+                    } else if (datFlag=="raw") {
+                        #i=which(ann$type==metabFlag & apply(metab,1,function(x) mean(!is.na(x))>=.5))
+                        i=which(ann$type==metabFlag)
+                    } else if (datFlag=="imputed") {
+                        i=which(ann$type==metabFlag & apply(metab,1,function(x) mean(!is.na(x))>=.5))
+                    }
+                    if (datFlag%in%c("raw","raw_allMetab")) {
+                        expr=metabR[i,]
+                    } else if (datFlag=="imputed") {
+                        expr=metabI[i,]
+                    } else if (datFlag=="imputed_allMetabImp") {
+                        expr=metabI2[i,]
+                    } else {
+                        expr=metab[i,]
+                    }
+                    if (modelFlag%in%c("ptsd+sex","ptsd*sex")) {
+                        i=which(fitMP$p.value[,2]<pThres2 & fitMS$p.value[,2]<pThres2)
+                        expr=expr[i,]
+                    } else if (modelFlag%in%c("diary_tst+sex")) {
+                        i=which(fitMDT$p.value[,2]<pThres2 & fitMS$p.value[,2]<pThres2)
+                        expr=expr[i,]
+                    } else if (modelFlag%in%c("psg_tst+sex")) {
+                        i=which(fitMPT$p.value[,2]<pThres2 & fitMS$p.value[,2]<pThres2)
+                        expr=expr[i,]
+                    } else if (modelFlag%in%c("ln_delta_nrem+sex")) {
+                        i=which(fitMDR$p.value[,2]<pThres2 & fitMS$p.value[,2]<pThres2)
+                        expr=expr[i,]
+                    }
+                    design=model.matrix(modelThis,data=phen)
+                    colnames(design)=colInfo$name2[match(colnames(design),colInfo$name1)]
+                    expr=expr[,match(rownames(design),colnames(expr))]
+                    grp=as.factor(phen[,modelFlag])
+                    j=which(!is.na(grp))
+                    tmp=rep(NA,nrow(expr))
+                    if (datFlag=="orig") {
+                        x=c(expr[,j])
+                        dat=log2(expr[,j]+min(x[which(x!=0)])/10)
+                        log2fc=apply(dat,1,function(x,grp) {mean(x[grp==2],na.rm=T)-mean(x[grp==1],na.rm=T)},grp=as.integer(grp)[j])
+                    } else {
+                        log2fc=apply(expr[,j],1,function(x,grp) {mean(x[grp==2],na.rm=T)-mean(x[grp==1],na.rm=T)},grp=as.integer(grp)[j])
+                    }
+                    nm=c("metabolite","numOfSamples")
+                    top=data.frame(metabolite=rownames(expr),numOfSamples=apply(expr,1,function(x) sum(!is.na(x))),stringsAsFactors=F)
+                    if (metabFlag=="lipid") {
+                        colId2=which(names(ann)!="id")
+                        nm=c(nm,names(ann)[colId2])
+                        top=cbind(top,ann[match(top$metabolite,ann$id),colId2])
+                    }
+                    colId=2
+                    nm=c(nm,paste(c("log2fc","pv",adjPFlag),"_",colnames(design)[colId],sep=""))
+                    top=cbind(top,log2fc=log2fc,pv=tmp,adjP=tmp,stringsAsFactors=F)
+                    for (i in 1:nrow(expr)) {
+                        modelThis=as.formula(modelFlag)
+                        fit2=tryCatch(glm(modelThis, family="binomial",data=dat),error = function(e) e)
+                        res=summary(fit2)$coef
+                        rownames(res)=colInfo$name2[match(rownames(res),colInfo$name1)]
+                        colnames(res)=c("coef","stdErr","z","pv")
+                        tbl=data.frame(basedOn=rep(header,nrow(res)),model=rep(paste("",modelFlag,sep=""),nrow(res)),term=rownames(res),stringsAsFactors=F)
+                        
+                        fit=try(wilcox_test(expr[i,]~grp,distribution="exact"))
+                        if (class(fit)=="ScalarIndependenceTest") {
+                            top$pv[i]=pvalue(fit)
+                        }
+                    }
+                    top$adjP=p.adjust(top$pv,method=adjPFlag)
+                    
+                    pThres=0.05
+                    k=2
+                    cat("\n",metabFlag,": ",colnames(design)[k],sep="")
+                    print(table(top$adjP<pThres))
+                    names(top)=nm
+                    fName3=paste("_",respFlag,"Resp_",sub("*","X",sub("+","_",modelFlag,fixed=T),fixed=T),"_",metabFlag,sep="")
+                    write.table(top,paste(datadir,"stat_wilcox",fName3,".txt",sep=""), sep="\t", col.names=T, row.names=F, quote=F)
+                }
+            }
+        }
+    }
+}
+
+## --------------------
 library(coin)
 
 if (F) {
@@ -394,11 +541,13 @@ datList=c("orig","imputed","raw","raw_allMetab","imputed_allMetabImp")
 datList=c("imputed")
 datList=c("raw")
 
+metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
+
 for (datFlag in datList) {
     subDir=datFlag
     if (subDir!="" & !file.exists(subDir)) dir.create(file.path(subDir))
     datadir=paste(subDir,"/",sep="")
-    for (metabFlag in unique(ann$type)) {
+    for (metabFlag in metabList) {
         for (respFlag in c("metab")) {
             for (modelFlag in c("ptsd","sex")) {
                 cat("\n\n============= ",datFlag,", ",metabFlag,", ",modelFlag,"\n",sep="")
@@ -495,12 +644,15 @@ metabI=datObj$metabImp
 verbose=F
 
 filtList=c("","_25percMostVar")
+filtList=c("_25percMostVar")
 
 testFlag="linear"
 testFlag="logistic"
 
 datFlag="raw"
 datFlag="imputed"
+
+metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
 
 colorInfo=data.frame(grp=c("Control/Female","PTSD/Female","Control/Male","PTSD/Male"),col=c("orange","red","skyblue","blue"),stringsAsFactors=F)
 
@@ -510,11 +662,11 @@ colVec[which(phen$ptsd=="PTSD" & phen$sex=="Female")]="red"
 colVec[which(phen$ptsd=="Control" & phen$sex=="Male")]="skyblue"
 colVec[which(phen$ptsd=="PTSD" & phen$sex=="Male")]="blue"
 
-fName2=paste("stat_prinCompMetabolite.txt",sep="")
-write.table("Metabolite meta variable from PCA\n",fName2, sep="\t", col.names=F, row.names=F, quote=F)
-
 cutoff=3
 for (testFlag in c("linear","logistic")) {
+    #fName2=paste("stat_prinCompMetabolite.txt",sep="")
+    fName2=paste("stat_prinCompMetabolite_",testFlag,".txt",sep="")
+    write.table("Metabolite meta variable from PCA\n",fName2, sep="\t", col.names=F, row.names=F, quote=F)
     if (testFlag=="linear") {
         #modelList=paste("metabolite~",c("ptsd","sex","ptsd+sex","ptsd*sex","diary_tst","psg_tst","ln_delta_nrem"),sep="")
         modelList=paste("metabolite~",c("diary_tst","psg_tst","ln_delta_nrem"),sep="")
@@ -522,11 +674,12 @@ for (testFlag in c("linear","logistic")) {
         modelList=paste("metabolite~",c("diary_tst","psg_tst","ln_delta_nrem","diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex","diary_tst*sex","psg_tst*sex","ln_delta_nrem*sex"),sep="")
     } else {
         modelList=c("ptsd~metabolite","sex~metabolite","ptsd~metabolite+sex","ptsd~metabolite*sex")
+        modelList=c("ptsd~metabolite","sex~metabolite","ptsd~metabolite+sex","ptsd~metabolite*sex","ptsd~metabolite*diary_tst","ptsd~metabolite*psg_tst","ptsd~metabolite*ln_delta_nrem")
     }
 
     statTbl=NULL
     for (filtFlag in filtList) {
-        for (metabFlag in unique(ann$type)) {
+        for (metabFlag in metabList) {
             if (verbose) {
                 cat("\n\n===================================================\n",sep="")
                 cat("===================================================\n\n",sep="")

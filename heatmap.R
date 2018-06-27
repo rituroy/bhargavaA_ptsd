@@ -24,10 +24,12 @@ pThres=10^-8
 pThres=10^-6
 pThres=0.05
 
+metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
+
 compList=paste("_rnd",numPr,sep="")
 compList=paste("_topVar",numPr,sep="")
-compList=paste("_",unique(datObj$ann$type),sep="")
-compList=paste("_25percMostVarMetab_",unique(datObj$ann$type),sep="")
+compList=paste("_",metabList,sep="")
+compList=paste("_25percMostVarMetab_",metabList,sep="")
 
 datFlag=""
 limSl=c(330,480)
@@ -75,64 +77,65 @@ for (compFlag in compList) {
                 compName1=capWords(sub("_","",compFlag))
             }
         }
-        for (transFlag in c("")) {
-            if (F) {
-                if (transFlag=="") {
-                    subsetFlag=subsetName=""
-                } else {
-                    subsetFlag=paste("_",tolower(transFlag),sep="")
-                    subsetName=paste(", ",transFlag,sep="")
-                }
-            }
+        for (subsetFFlag in c("","_metabClust2")) {
             for (subsetFlag in c("")) {
+                cat("\n\n================ ",compFName,", ",subsetFFlag,"\n")
                 compName2=compName1
+                if (subsetFFlag=="_metabClust2") {
+                    subsetFName=" middle cluster"
+                    datadir=paste(sub("_","",compFName),"/",sep="")
+                    fName=paste(fName1,compFName,subsetFlag,centrFlag,rndId,datFlag,sep="")
+                    tbl=read.table(paste(datadir,"clusterInfoFeature",fName,".txt",sep=""),sep="\t",h=T,quote="",comment.char="",as.is=T,fill=T)
+                    prId=which(datObj$ann$id%in%tbl$id[which(tbl$clustId=="cluster2")])
+                    cat("No. of metabs: ",length(prId),"\n")
+                } else {
+                    subsetFName=""
+                    prId=1:nrow(datObj$ann)
+                }
+                if (length(prId)<2) {cat("Need at least 2 metabolites!!!\n");  next}
                 if (subsetFlag=="") {
                     subsetName=""
-                    prId=NULL
+                    #prId=NULL
                     samId=1:nrow(datObj$phen)
                     sampleBar="cluster"
                     geneBar="clusterPr"
                     nClust=c(2,4)
                     nClust=c(2,2)
+                    nClust=c(3,2)
                 } else {
-                    grpUniq=sub("_","",subsetFlag)
-                    subsetName=paste(", ",grpUniq,sep="")
-                    if (grpUniq=="gamma") grpUniq="_"
-                    fName2=paste(datadir,"clusterInfoFeature",fName1,compFlag,centrFlag,rndId,".txt",sep="")
-                    fName2=paste(datadir,"clusterInfoFeature",fName1,centrFlag,rndId,".txt",sep="")
-                    prId=read.table(file=fName2, header=T, sep="\t", quote="", comment.char="", as.is=T)
-                    prId=prId[,"probesetid"]
-                    samId=which(tolower(datObj$phen[,varList])==grpUniq)
-                    sampleBar=""
-                    sampleBar="cluster"
-                    geneBar=""
-                    nClust=c(NA,NA)
+                    samId=NULL
+                    if (F) {
+                        grpUniq=sub("_","",subsetFlag)
+                        subsetName=paste(", ",grpUniq,sep="")
+                        if (grpUniq=="gamma") grpUniq="_"
+                        fName2=paste(datadir,"clusterInfoFeature",fName1,compFlag,centrFlag,rndId,".txt",sep="")
+                        fName2=paste(datadir,"clusterInfoFeature",fName1,centrFlag,rndId,".txt",sep="")
+                        prId=read.table(file=fName2, header=T, sep="\t", quote="", comment.char="", as.is=T)
+                        prId=prId[,"probesetid"]
+                        samId=which(tolower(datObj$phen[,varList])==grpUniq)
+                        sampleBar=""
+                        sampleBar="cluster"
+                        geneBar=""
+                        nClust=c(NA,NA)
+                    }
                 }
                 if (compFlag%in%c("_topSignif")) {
                     i1=which(stat_1[,colIdPV]<pThres)
                     if (length(i1)==0) next
-                    fNameOut=paste(fName1,compFName,subsetFlag,centrFlag,"_",colNamePV,pThres,datFlag,sep="")
+                    fNameOut=paste(fName1,compFName,subsetFFlag,subsetFlag,centrFlag,"_",colNamePV,pThres,datFlag,sep="")
                     header=paste(compName2,subsetName,", ",colNamePV,"<",pThres,sep="")
                     dat0=eset$expr
-                    switch(datFlag,
-                    "_combatAdj"={dat0=exprCom
-                    }
-                    )
                     dat0=dat0[match(stat_1[,colGeneId][i1],rownames(dat0)),]
                 } else {
                     #fNameOut=paste(fName1,compFName,subsetFlag,centrFlag,rndId,datFlag,sep="")
-                    fNameOut=paste(fName1,compFName,subsetFlag,centrFlag,rndId,datFlag,sep="")
-                    header=paste(compName2,subsetName,sep="")
+                    fNameOut=paste(fName1,compFName,subsetFFlag,subsetFlag,centrFlag,rndId,datFlag,sep="")
+                    header=paste(compName2,ifelse(subsetFName=="","",paste(", ",subsetFName,sep="")),subsetName,sep="")
                 }
                 #fNameOut=paste(fNameOut,varFlag,sep="")
-                expr=datObj$metabImp[,samId]
+                fNameOut=gsub(" ","_",fNameOut)
+                expr=datObj$metabImp[prId,samId]
                 #expr=datObj$metabRaw[,samId]
-                if (F) {
-                    annRow=data.frame(apply(as.matrix(statTbl[,grep("fdrBY_",names(statTbl))]),c(1,2),function(x) {y=rep("not significant",length(x)); y[x<pThres]="significant"; y[is.na(x)]=NA; y}),stringsAsFactors=F)
-                    names(annRow)=paste("signif_",names(annRow),sep="")
-                    annRow=cbind(datObj$ann,annRow)
-                }
-                annRow=datObj$ann
+                annRow=datObj$ann[prId,]
                 phen=datObj$phen[samId,]
                 #phen$id2=sapply(phen$id,function(x) {strsplit(x,"_")[[1]][2]},USE.NAMES=F)
                 
@@ -168,9 +171,9 @@ for (compFlag in compList) {
                     i=1:nrow(expr)
                 } else if (length(grep("percMostVarMetab",compFlag))==1) {
                     x1=strsplit(compFlag,"_")[[1]]; x1=x1[2:length(x1)]; if (length(x1)==1) x1=c(x1,"")
-                    if (x1[2]%in%unique(datObj$ann$type)) {
-                        i2=which(datObj$ann$type==x1[2])
-                        i2=which(datObj$ann$type==x1[2] & apply(expr,1,function(x) mean(!is.na(x))>=.5))
+                    if (x1[2]%in%unique(annRow$type)) {
+                        #i2=which(annRow$type==x1[2])
+                        i2=which(annRow$type==x1[2] & apply(expr,1,function(x) mean(!is.na(x))>=.5))
                         expr=expr[i2,]
                         annRow=annRow[i2,]
                     }
@@ -187,9 +190,9 @@ for (compFlag in compList) {
                     geneBar="clusterPr"
                     #i=order(annRow$logFC)
                     i=1:nrow(expr)
-                } else if (compFlag%in%paste("_",unique(datObj$ann$type),sep="")) {
-                    i2=which(paste("_",datObj$ann$type,sep="")==compFlag)
-                    i2=which(paste("_",datObj$ann$type,sep="")==compFlag & apply(expr,1,function(x) mean(!is.na(x))>=.5))
+                } else if (compFlag%in%paste("_",unique(annRow$type),sep="")) {
+                    #i2=which(paste("_",annRow$type,sep="")==compFlag)
+                    i2=which(paste("_",annRow$type,sep="")==compFlag & apply(expr,1,function(x) mean(!is.na(x))>=.5))
                     expr=expr[i2,]
                     annRow=annRow[i2,]
                     geneBar="clusterPr"
@@ -204,13 +207,6 @@ for (compFlag in compList) {
                     nClust[1]=min(c(nrow(expr)-1,nClust[1]))
                     if (nrow(expr)<5) nClust[1]=NA
                 }
-                
-                if (transFlag=="") {
-                    j=1:ncol(expr)
-                } else {
-                    j=which(phen$translocation==transFlag)
-                }
-                
                 
                 arrayData=expr[i,j]
                 annRow=annRow[i,]
@@ -236,9 +232,9 @@ for (compFlag in compList) {
                 varFList=varFName=NULL
                 
                 #varList=c("ptsd","sex")
-                #varName=paste(c("PTSD","Gender")," ",sep="")
+                #varName=paste(c("PTSD","Sex")," ",sep="")
                 varList=c("ptsd","sex","diary_tst","psg_tst","ln_delta_nrem")
-                varName=paste(c("ptsd","gender","diary_tst","psg_tst","ln_delta_nrem")," ",sep="")
+                varName=paste(c("ptsd","sex","diary_tst","psg_tst","ln_delta_nrem")," ",sep="")
                 k=which(varList%in%names(annCol))
                 varListAll=varList
                 varNameAll=varName
@@ -364,19 +360,10 @@ for (compFlag in compList) {
                     distMat=dist(arrayData, method=distMethod)
                 }
                 )
-                
-                if (F) {
-                    subDir <- paste(compFlag,sep="")
-                    if (!file.exists(subDir)){
-                        dir.create(file.path(subDir))
-                    }
-                    subDir=paste(subDir,"/",sep="")
-                }
-                subDir=""
-                subDir=paste(sub("_","",compFName),"/",sep="")
-                if (subDir!="" & !file.exists(subDir)){
-                    dir.create(file.path(subDir))
-                }
+                #subDir=""
+                #subDir=paste(sub("_","",compFName),"/",sep="")
+                subDir=paste(sub("_","",compFName),subsetFFlag,"/",sep="")
+                if (subDir!="" & !file.exists(subDir)) dir.create(file.path(subDir))
                 if (outFormat=="png") {
                     margins=c(6,1)
                     margins=c(10,20)

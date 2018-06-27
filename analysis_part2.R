@@ -29,8 +29,8 @@ datFlag="orig"
 datFlag="imputed"
 datFlag="raw_allMetab"
 
-datFlag="voom"
 datFlag="raw"
+datFlag="voom"
 
 adjPFlag="qv"
 adjPFlag="BY"
@@ -39,12 +39,16 @@ pThres2=0.2
 pThres2=99
 
 ## -------------------
-metabList=unique(ann$type)
+
+#metabList=unique(ann$type)
+metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
 compList=c("diary_tst","psg_tst","ln_delta_nrem","diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex","diary_tst*sex","psg_tst*sex","ln_delta_nrem*sex")
-compList=c("ptsd+sex","ptsd*sex")
 compList=c("ptsd","sex","ptsd+sex","ptsd*sex")
-compList=c("diary_tst","psg_tst","ln_delta_nrem")
+compList=c("ptsd+sex","ptsd*sex")
 compList=c("ptsd","sex")
+compList=c("diary_tst","psg_tst","ln_delta_nrem")
+compList=c("ptsd+sex","ptsd*sex","diary_tst","psg_tst","ln_delta_nrem")
+compList=c("ptsd+sex","ptsd*sex","diary_tst","psg_tst","ln_delta_nrem","ptsd+diary_tst","ptsd+psg_tst","ptsd+ln_delta_nrem","ptsd*diary_tst","ptsd*psg_tst","ptsd*ln_delta_nrem","diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex","diary_tst*sex","psg_tst*sex","ln_delta_nrem*sex")
 
 metabFlag=metabList[1]
 
@@ -55,11 +59,12 @@ for (testFlag in c("_t","_wilcox")) {
     if (plotFlag=="_log2FCplot" & testFlag=="_t") next
     if (testFlag=="_t") {
         #datadir=paste("results/metabO/voom/pv",ifelse(pThres2>=1,1,pThres2),"/",sep="")
+        datadir=paste("voom/",sep="")
         datadir=paste("results/final/voom/table/",sep="")
     } else {
         #datadir=paste("results/metabO/",datFlag,"/",sep="")
-        datadir=paste("results/final/wilcoxon/table/",sep="")
         datadir=paste("raw/",sep="")
+        datadir=paste("results/final/wilcoxon/table/",sep="")
     }
     for (metabFlag in metabList) {
         if (plotFlag[1]%in%c("_qqPlot","_histogram","_volcanoPlot","_manhattanPlot","_avgLog2ExprVsWilcoxVoomPV","_log2FCplot")) {
@@ -349,7 +354,8 @@ colIdPV=paste(c("pv","BY"),"_",modelFlag,sep="")
 datFlag=""
 
 
-metabList=unique(ann$type)
+#metabList=unique(ann$type)
+metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
 metabList="lipid"
 
 compList=c("diary_tst","psg_tst","ln_delta_nrem","diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex","diary_tst*sex","psg_tst*sex","ln_delta_nrem*sex")
@@ -357,7 +363,7 @@ compList=c("ptsd+sex","ptsd*sex")
 compList=c("ptsd","sex","ptsd+sex","ptsd*sex")
 compList=c("diary_tst*sex")
 
-#metabolite	identifier	annotation	inChIkey	species	count	esiMode	mz	rt	type	log2fc_diary_tst	pv_diary_tst	BY_diary_tst	log2fc_maleVfemale	pv_maleVfemale	BY_maleVfemale	log2fc_diary_tstGenderInteraction	pv_diary_tstGenderInteraction	BY_diary_tstGenderInteraction
+#metabolite	identifier	annotation	inChIkey	species	count	esiMode	mz	rt	type	log2fc_diary_tst	pv_diary_tst	BY_diary_tst	log2fc_maleVfemale	pv_maleVfemale	BY_maleVfemale	log2fc_diary_tstSexInteraction	pv_diary_tstSexInteraction	BY_diary_tstSexInteraction
 #X9.88_922.01	9.88_922.01			[M+H]+	45	(+) ESI	922.0112	9.88	lipid	-0.02397346	1.07E-06	0.010205564	-22.95897124	4.89E-21	9.36E-17	0.053173639	1.24E-10	2.38E-06
 
 colIdNum=c("diary_tst","psg_tst","ln_delta_nrem")
@@ -494,6 +500,28 @@ for (metabFlag in metabList) {
     }
 }
 
+## ---------------
+## Significant interaction from voom
+
+i=which(ann$id=="X9.88_922.01")
+dat=datObj$metabImp
+grp=phen$sex
+grpUniq=sort(unique(grp))
+colList=c("skyblue","blue")
+png("tmp.png")
+plot(dat[i,],phen$diary_tst)
+for (gId in 1:length(grp)) {
+    j=which(grp==grpUniq[gId])
+    points(dat[i,j],phen$diary_tst[j],col=colList[gId])
+}
+dev.off()
+summary(lm(dat[i,]~phen$diary_tst))$coef
+summary(lm(dat[i,]~phen$sex))$coef
+summary(lm(dat[i,]~phen$diary_tst*phen$sex))$coef
+
+ii=which(rownames(fit$coef)=="X9.88_922.01")
+fit$adjP[ii,]
+
 ####################################################################
 ####################################################################
 ## Comparison of stat tables
@@ -502,13 +530,39 @@ datadir="results/final/wilcoxon/table/"
 stat1=read.table(paste(datadir,"stat_wilcox_metabResp_ptsd_lipid.txt",sep=""),sep="\t",h=T,quote="",comment.char="",as.is=T,fill=T)
 stat2=read.table(paste(datadir,"stat_wilcox_metabResp_sex_lipid.txt",sep=""),sep="\t",h=T,quote="",comment.char="",as.is=T,fill=T)
 pThres=0.05
-table(stat1$BY_ptsd<pThres,stat2$BY_maleVfemale<pThres)
+table(ptsd=stat1$BY_ptsd<pThres,sex=stat2$BY_maleVfemale<pThres)
+
 
 ## ---------------
+## Multiple significant terms in single file
+pThres=0.05
+datadir="voom/"
+datadir=paste("results/final/voom/table/",sep="")
+fileList=dir(datadir)
+for (fId in 1:length(fileList)) {
+    stat1=read.table(paste(datadir,fileList[fId],sep=""),sep="\t",h=T,quote="",comment.char="",as.is=T,fill=T)
+    k=grep("BY_",names(stat1))
+    if (length(k)<2) next
+    cat("\n\n=============== ",fileList[fId],"\n",sep="")
+    for (k1 in 1:(length(k)-1)) {
+        for (k2 in (k1+1):length(k)) {
+            x=table(stat1[,k[k1]]<pThres,stat1[,k[k2]]<pThres,dnn=names(stat1)[k[c(k1,k2)]])
+            cat("\n")
+            print(x)
+        }
+    }
+    
+}
+
+
+## ---------------
+## Significant metabolite in multiple files
 metabFlag="lipid"
 modelFlag="ptsd"
 
-for (metabFlag in unique(ann$type)) {
+metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
+
+for (metabFlag in metabList) {
     for (modelFlag in c("ptsd","sex")) {
         cat("\n\n=============== ",metabFlag,", ",modelFlag,"\n",sep="")
         fName=paste("_wilcox_metabResp_",modelFlag,"_",metabFlag,sep="")
@@ -518,6 +572,7 @@ for (metabFlag in unique(ann$type)) {
         datadir="results/metabT/raw/"
         datadir="results/metabO/raw/"
         datadir="results/metabO/imputed/"
+        datadir="results/metabO/raw_allMetab/"
         datadir="results/metabO/raw_allMetab/"
         stat2=read.table(paste(datadir,"stat",fName,".txt",sep=""),sep="\t",h=T,quote="",comment.char="",as.is=T,fill=T)
         ttl=c(ttl,"raw_allMetab")
@@ -567,7 +622,8 @@ cbind(stat1[i,1:2],stat2[i,2])
 pThres=0.05
 pThres2=99
 
-metabList=unique(ann$type)
+#metabList=unique(ann$type)
+metabList=unique(ann$type); metabList=metabList[which(!metabList%in%c("internal standard"))]
 compList=c("ptsd+sex","ptsd*sex","diary_tst+sex","psg_tst+sex","ln_delta_nrem+sex","diary_tst*sex","psg_tst*sex","ln_delta_nrem*sex")
 
 #datadir="results/pv1/table/"
@@ -618,35 +674,67 @@ for (datadir2 in dir(datadir1)[-grep("legend",dir(datadir1))]) {
     pv=fisher.test(tbl$ptsd,tbl$clustId)$p.value
     cat("PTSD: PV ",signif(pv,2),"\n")
     pv=fisher.test(tbl$sex,tbl$clustId)$p.value
-    cat("Gender: PV ",signif(pv,2),"\n")
+    cat("Sex: PV ",signif(pv,2),"\n")
     for (varId in c("diary_tst","psg_tst","ln_delta_nrem")) {
         pv=pvalue(wilcox_test(tbl[,varId]~as.factor(tbl$clustId),distribution="exact"))
         cat(varId,": PV ",signif(pv,2),"\n")
     }
 }
 "
+25percMostVarMetab_bile_acid
+PTSD: PV  0.51
+Sex: PV  1
+diary_tst : PV  0.26
+psg_tst : PV  0.21
+ln_delta_nrem : PV  0.079
+
+
 25percMostVarMetab_lipid
 PTSD: PV  0.0087
-Gender: PV  1
+Sex: PV  1
 diary_tst : PV  0.006
 psg_tst : PV  0.26
 ln_delta_nrem : PV  0.65
 
 
+25percMostVarMetab_lipid_metabClust2
+PTSD: PV  0.28
+Sex: PV  0.43
+diary_tst : PV  0.13
+psg_tst : PV  0.92
+ln_delta_nrem : PV  0.35
+
+
 25percMostVarMetab_primary
 PTSD: PV  1
-Gender: PV  0.67
+Sex: PV  0.67
 diary_tst : PV  0.12
 psg_tst : PV  0.5
 ln_delta_nrem : PV  0.73
 
 
+25percMostVarMetab_primary_metabClust2
+PTSD: PV  0.51
+Sex: PV  1
+diary_tst : PV  0.0043
+psg_tst : PV  0.2
+ln_delta_nrem : PV  0.96
+
+
 25percMostVarMetab_steroid
-PTSD: PV  0.83
-Gender: PV  0.83
-diary_tst : PV  0.99
-psg_tst : PV  0.36
-ln_delta_nrem : PV  0.48
+PTSD: PV  0.52
+Sex: PV  0.67
+diary_tst : PV  0.52
+psg_tst : PV  0.29
+ln_delta_nrem : PV  0.19
+
+
+25percMostVarMetab_steroid_metabClust2
+PTSD: PV  0.68
+Sex: PV  1
+diary_tst : PV  0.83
+psg_tst : PV  0.58
+ln_delta_nrem : PV  0.2
 "
 
 ####################################################################
@@ -680,6 +768,159 @@ for (id in idList) {
     print(res$coef)
 }
 
+
+####################################################################
+####################################################################
+## Is there a global hyper-metabolism associated with variables of interest?
+
+source(paste(dirSrc,"functions/miscFuncs.1.3.R",sep=""))
+
+pThres=0.05
+
+datadir1="results/final/wilcoxon/table/"
+fileList=dir(datadir1)
+
+datadir1="results/final/voom/table/"
+fileList=dir(datadir1)
+fileList=fileList[grep("diary_tst_|psg_tst_|ln_delta_nrem_",fileList)]
+
+x=sub("primary","0primary",fileList)
+x=sub("diary_tst_","1diary_tst_",x)
+x=sub("psg_tst_","2psg_tst_",x)
+fileList=fileList[order(x)]
+for (fId in 1:length(fileList)) {
+    #cat("\n\n=========== ",fileList[fId],"\n",sep="")
+    x=fileList[fId]
+    x=sub("wilcox_","",x)
+    x=sub("diary_tst","diary tst",x)
+    x=sub("psg_tst","psg tst",x)
+    x=sub("ln_delta_nrem","ln delta nrem",x)
+    x=strsplit(sub(".txt","",x,fixed=T),"_")[[1]]
+    header=x
+    cat("\n\n",capWords(header[4]),": metabolite ~ ",header[3],"\n",sep="")
+    #cat("\n\n",capWords(header[4]),":\n",sep="")
+    tbl1=read.table(paste(datadir1,fileList[fId],sep=""), sep="\t", h=T, quote="", comment.char="",as.is=T,fill=T)
+    stat2=tbl1
+    ann2=stat2
+    i2=1:nrow(stat2)
+    k=grep("BY_",names(stat2))
+    id1=as.integer(stat2[i2,k]<pThres)
+    
+    k=grep("log2fc_",names(stat2))
+    dirn=sign(stat2[i2,k])
+    dirn[dirn==0]=NA
+    #dirn[is.na(ann2$keep[iA2][i2]) | !ann2$keep[iA2][i2]]=NA
+    #print(table(dirn=dirn,signif=id1))
+    
+    designList=""
+    
+    cat("-------------------------------\n")
+    varList=c("","region","relationToIsland")
+    varList=c("")
+    for (varId in 1:length(varList)) {
+        if (varList[varId]=="") grp=rep("",nrow(ann2)) else grp=ann2[,varList[varId]]
+        grpUniq=sort(unique(grp))
+        
+        for (grpId in 1:length(grpUniq)) {
+            #cat("\n=========== ",grpUniq[grpId]," ====================\n",sep="")
+            
+            #Is there a global demethylation associated with variable of interest?
+            for (designFlag in designList) {
+                if (designFlag=="") {
+                    ii=which(grp==grpUniq[grpId])
+                } else {
+                    cat("\n=========== Infinium_Design_Type ",designFlag," ====================\n",sep="")
+                    ii=which(grp==grpUniq[grpId] & ann2$Infinium_Design_Type[iA2][i2]==designFlag)
+                }
+                ## global: binomial test against 0.5
+                x=table(dirn[ii])
+                #print(x)
+                res=binom.test(x=sum(dirn[ii]==1,na.rm=TRUE), n=sum(!is.na(dirn[ii])), p=0.5, alternative="greater")
+                #print(res)
+                pv=res$p.value
+                suf=""
+                if (pv<0.05) {
+                    suf=" ****"
+                } else if (pv<0.1) {
+                    suf=" **"
+                }
+                cat("Number total: ",length(ii),"\n",sep="")
+                cat("Proportion up globally: ",round(res$estimate,2),"\npv (vs. 0.5) ",signif(pv,4),suf,"\n",sep="")
+            }
+        }
+        
+        cat("-------------------------------\n")
+        for (grpId in 1:length(grpUniq)) {
+            #cat("\n=========== ",grpUniq[grpId]," ====================\n",sep="")
+            
+            #Is there greater demethylation for significant loci than globally?
+            for (designFlag in designList) {
+                if (designFlag=="") {
+                    ii=which(grp==grpUniq[grpId])
+                } else {
+                    cat("\n=========== Infinium_Design_Type ",designFlag," ====================\n",sep="")
+                    ii=which(grp==grpUniq[grpId] & ann2$Infinium_Design_Type[iA2][i2]==designFlag)
+                }
+                i=ii[which(id1[ii]==1)]
+                i_2=ii[which(id1[ii]==0)]
+                if (length(i)==0) next
+                #cat("\n\n",capWords(header[4]),": metabolite ~ ",header[3],"\n",sep="")
+                
+                ## among P<0.05
+                x=table(dirn[ii])
+                #print(x)
+                res=prop.test(c(sum(dirn[i]==1,na.rm=TRUE), sum(dirn[ii]==1,na.rm=TRUE)),c(sum(!is.na(dirn[i])), sum(!is.na(dirn[ii]),na.rm=TRUE)), alternative="greater")
+                #print(res)
+                pv=res$p.value
+                suf=""
+                if (pv<0.05) {
+                    suf=" ****"
+                } else if (pv<0.1) {
+                    suf=" **"
+                }
+                cat("Number total = ",length(ii),", number signif = ",length(i),"\n",sep="")
+                cat("Proportion up: For signif loci (",round(res$estimate[1],2),") vs. globally (",round(res$estimate[2],2),"):\npv ",signif(pv,4),suf,"\n",sep="")
+                
+                ## among P>=0.05
+                res=prop.test(c(sum(dirn[i]==1,na.rm=TRUE), sum(dirn[i_2]==1,na.rm=TRUE)),c(sum(!is.na(dirn[i])), sum(!is.na(dirn[i_2]),na.rm=TRUE)), alternative="greater")
+                #print(res)
+            }
+        }
+    }
+}
+
+####################################################################
+####################################################################
+library("VennDiagram")
+
+png("vennDiagram_ptsd_sex_primary.png")
+venn.plot <- draw.pairwise.venn(area1=100,area2=3,cross.area=0,category=c("PTSD", "Sex"),fill=c("blue","red"),scaled=T)
+grid.draw(venn.plot)
+#title(main="Primary")
+dev.off()
+
+####################################################################
+####################################################################
+## Association with clusters
+
+grpUniq="primary"
+grpUniq="primary_metabClust2"
+
+datadir1=""
+datadir=paste(datadir1,"25percMostVarMetab_",grpUniq,"/",sep="")
+tbl1=read.table(paste(datadir,"clusterInfoFeature_25percMostVarMetab_",grpUniq,".txt",sep=""),sep="\t",h=T,quote="",comment.char="",as.is=T,fill=T)
+tbl2=read.table(paste(datadir,"clusterInfoSample_25percMostVarMetab_",grpUniq,".txt",sep=""),sep="\t",h=T,quote="",comment.char="",as.is=T,fill=T)
+
+tbl=tbl2
+varList1=c("ptsd","sex")
+varList2="clustId"
+for (vId1 in 1:length(varList1)) {
+    for (vId2 in 1:length(varList2)) {
+        x=table(tbl[,varList1[vId1]],tbl[,varList2[vId2]],dnn=c(varList1[vId1],varList2[vId2]))
+        print(x)
+        print(fisher.test(x))
+    }
+}
 
 ####################################################################
 ####################################################################
